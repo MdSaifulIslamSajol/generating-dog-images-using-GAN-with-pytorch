@@ -9,19 +9,16 @@ dataset link : http://vision.stanford.edu/aditya86/ImageNetDogs/
 
 import numpy as np # linear algebra
 import pandas as pd # data processing, CSV file I/O (e.g. pd.read_csv)
-
 import os
 # print(os.listdir("../input"))
 #%%
 import matplotlib.pyplot as plt
 import numpy as np
-
 import torch
 from torch import nn, optim
 import torch.nn.functional as F
 #from torch.autograd import Variable
 import torch.optim as optim
-
 import torchvision.utils as vutils
 from torchvision import datasets, transforms
 from torchvision.utils import save_image
@@ -75,7 +72,7 @@ plt.axis("off")
 plt.title("Training images")
 plt.imshow(np.transpose(vutils.make_grid(TrainingImages[0].to(device)[:64], padding=2, 
                                          normalize=True).cpu(),(1,2,0)))
-
+plt.show()
 #%%
 def weights_init(m):
     classname = m.__class__.__name__
@@ -198,10 +195,10 @@ for epoch in range(num_epochs):
     # For each batch in dataloader
     for i, data in enumerate(train_loader, 0):
         
-        # Update D network: maximize log(D(x)) + log(1 - D(G(z)))
+        # Update Discriminator network: maximize log(D(x)) + log(1 - D(G(z)))
         ## Train with real batch
         netD.zero_grad()
-        realImg = data[0].to(device)
+        realImg = data[0].to(device)  # taking only images 
         batch_size = realImg.size(0)
         labels = torch.full((batch_size,), real_label, device=device)
         
@@ -215,19 +212,23 @@ for epoch in range(num_epochs):
         noise = torch.randn(batch_size, latentVec, 1, 1, device = device)
         fake = netG(noise)
         labels.fill_(fake_label)
+        
         output = netD(fake.detach())
         Fake_Loss = criterion(output.squeeze(1).squeeze(1).squeeze(1).float(), labels.float())
         Fake_Loss.backward()
         D_G1= output.mean().item()
+        
         # Add the gradients from the all-real and all-fake batches
         DisLoss = Real_Loss + Fake_Loss
         optimizerD.step()
         
-        # Update G network: maximize log(D(G(z)))
+        # Update Generator network: maximize log(D(G(z)))
         netG.zero_grad()
         labels.fill_(real_label)                # fake labels are real for generator cost
+        
         output = netD(fake)
         GLoss = criterion(output.squeeze(1).squeeze(1).squeeze(1).float(), labels.float())  # .squeeze(1).squeeze(1).squeeze(1)
+        
         GLoss.backward()
         D_G2 = output.mean().item()
         optimizerG.step()
@@ -254,7 +255,7 @@ plt.ylabel("Loss")
 plt.legend()
 plt.show()    
 
-#%%
+#%% Using only Generator network to test
 if not os.path.exists('../output_images'):
     os.mkdir('../output_images')
 im_batch_size = 50
